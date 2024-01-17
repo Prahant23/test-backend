@@ -1,112 +1,102 @@
-const Users=require('../model/userModel');
-const jwt=require('jsonwebtoken');
-//1 st ma controller then / model / then routes/ then index
-// making all the required functions
-const createUser = async (req, res) => {
-    //Step 1: Check if data is coming or not
-    console.log(req.body);
-   
-    //Step 2 : Destructure the data
-    const { firstName, lastName, email, password } = req.body;
-   
-    //Step 3 : validate the incoming data
-    if (!firstName || !lastName || !email || !password) {
+// const bcrypt = require("bcrypt");
+const Users = require("../model/userModel.js");
+const jwt = require("jsonwebtoken");
+
+const create = async (req, res) => {
+  // Step 1: Check the incoming data
+  console.log(req.body);
+
+  // Step 2: Destructure data
+  const { username, email, password } = req.body;
+
+  // Step 3: Validate data
+  if (!username || !email || !password) {
+    return res.status(400).json({ message: "Please fill all required fields" });
+  }
+
+  try {
+    // Step 4: Check if user already exists
+    const existingUser = await Users.findOne({ email: email });
+    if (existingUser) {
       return res.json({
-        success : false,
-        message : "Please enter all fields."
+        success: false,
+        message: "User already exists",
       });
     }
 
-    //step 4 : try catch block
-    try {
-      //Step 5 : check exisiting user
-      const exisitingUser = await Users.findOne({ email: email });
-      if (exisitingUser) {
-        return res.json({
-          success : false,
-          message: "User already exixts"
-        });
-      }
-   
-     
-      //Step 6 : Create new user
-      const newUser = new Users({
-        //Fieldname : incoming data name
-        firstName: firstName,
-        lastName: lastName,
-        email: email,
-        password: password,
-      });
-      //Step 7 : Save user and response
-      await newUser.save();
-      res.status(200).json(
-        {
-          success : true,
-          message: "User created successfully."
-        }
-      );
-    } catch (error) {
-      res.status(500).json("Server Error");
-    }
-  };
-  const loginUser = async (req, res) => {
-    //Step 1 : Check if data is coming or not
-    console.log(req.body);
-   
-    //Step 2 : Destructure the data
-    const { email, password } = req.body;
-   
-    //Step 3 : validate the incoming data
-    if (!email || !password) {
-      return res.json({
-        success : false,
-        message : "Please enter all fields."
-      });
-    }
-   
-    //Step 4 : try catch block
-    try {
-      //Step 5 : check exisiting user
-      const exisitingUser = await Users.findOne({ email: email });
-      if (!exisitingUser) {
-        return res.json({
-          success : false,
-          message: "User does not exixts"
-        });
-      }
-   
-      //Step 6 : check password
-      const isPasswordCorrect = await bcrypt.compare(
-        password,
-        exisitingUser.password
-      );
-      if (!isPasswordCorrect) {
-        return res.json({
-          success : false,
-          message: "Invalid credentials"
-        });
-      }
+    // Step 5: Hash the password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-      //  Step 7 : Create token
-      const token = await jwt.sign(
-        { id: exisitingUser._id },
-        process.env.JWT_SECRET
-      );
-      //Step 8 : Response
-      res.status(200).json({
-        success : true,
-        message: "User logged in successfully.",
-        token: token,
-        userData: exisitingUser,
+    // Step 6: Create a new user
+    const newUser = new Users({
+      username: username,
+      email: email,
+      password: hashedPassword,
+    });
+
+    // Step 7: Save the user to the database
+    await newUser.save();
+
+    res.json({
+      success: true,
+      message: "User created successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+const login = async (req, res) => {
+  // Step 1: Check the incoming data
+  console.log(req.body);
+
+  // Step 2: Destructure data
+  const { email, password } = req.body;
+
+  // Step 3: Validate data
+  if (!email || !password) {
+    return res
+      .status(400)
+      .json({ message: "Please provide email and password" });
+  }
+
+  try {
+    // Step 4: Check if the user exists
+    const user = await Users.findOne({ email: email });
+    if (!user) {
+      return res.json({
+        success: false,
+        message: "User not found",
       });
-    } catch (error) {
-      res.json({
-        success : false,
-        message: "Server Error",
-      });
-      }
-    };
-  module.exports = {
-    loginUser,
-    createUser,
-  };
+    }
+
+    // Step 5: Compare the passwords
+    // const passwordMatch = await bcrypt.compare(password, user.password);
+    // if (!passwordMatch) {
+    //   return res.json({
+    //     success: false,
+    //     message: "Incorrect password",
+    //   });
+    // }
+
+    // Step 6: Generate a JWT token
+    const token = jwt.sign({ userId: user._id,isAdmin: user.isAdmin }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    res.json({
+      success: true,
+      message: "Login successful",
+      token: token,
+      isAdmin: user.isAdmin,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+module.exports = {
+  create,
+  login,
+};
