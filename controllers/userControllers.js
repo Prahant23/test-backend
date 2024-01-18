@@ -1,21 +1,17 @@
-// const bcrypt = require("bcrypt");
 const Users = require("../model/userModel.js");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 
 const create = async (req, res) => {
-  // Step 1: Check the incoming data
   console.log(req.body);
 
-  // Step 2: Destructure data
   const { firstName, email, password, lastName } = req.body;
 
-  // Step 3: Validate data
-  if (!firstName || !email || !password || !lastName)  {
+  if (!firstName || !email || !password || !lastName) {
     return res.status(400).json({ message: "Please fill all required fields" });
   }
 
   try {
-    // Step 4: Check if user already exists
     const existingUser = await Users.findOne({ email: email });
     if (existingUser) {
       return res.json({
@@ -24,19 +20,13 @@ const create = async (req, res) => {
       });
     }
 
-    // Step 5: Hash the password
-    // const saltRounds = 10;
-    // const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // Step 6: Create a new user
     const newUser = new Users({
       firstName: firstName,
       lastName: lastName,
       email: email,
-      password: password,
+      password: password, // Note: This is not secure, use a secure way to store passwords
     });
 
-    // Step 7: Save the user to the database
     await newUser.save();
 
     res.json({
@@ -48,14 +38,12 @@ const create = async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 };
+
 const login = async (req, res) => {
-  // Step 1: Check the incoming data
   console.log(req.body);
 
-  // Step 2: Destructure data
   const { email, password } = req.body;
 
-  // Step 3: Validate data
   if (!email || !password) {
     return res
       .status(400)
@@ -63,7 +51,6 @@ const login = async (req, res) => {
   }
 
   try {
-    // Step 4: Check if the user exists
     const user = await Users.findOne({ email: email });
     if (!user) {
       return res.json({
@@ -72,7 +59,6 @@ const login = async (req, res) => {
       });
     }
 
-    // Step 5: Compare the passwords (without bcrypt)
     if (password !== user.password) {
       return res.json({
         success: false,
@@ -80,7 +66,6 @@ const login = async (req, res) => {
       });
     }
 
-    // Step 6: Generate a JWT token
     const token = jwt.sign(
       { userId: user._id, isAdmin: user.isAdmin, email: user.email },
       process.env.JWT_SECRET,
@@ -99,7 +84,6 @@ const login = async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         isAdmin: user.isAdmin,
-        // Add more user details as needed
       },
     });
   } catch (error) {
@@ -107,7 +91,86 @@ const login = async (req, res) => {
     res.status(500).json({ success: false, message: "Something went wrong" });
   }
 };
+
+const forgotPassword = async (req, res) => {
+  console.log(req.body);
+  try {
+    const user = await Users.findOne({ email: req.body.email });
+
+    if (!user) {
+      return res.json({
+        success: false,
+        message: "Email not found.",
+      });
+    }
+    const resetPasswordToken = user.getResetPasswordToken();
+
+    await user.save();
+
+    const frontendBaseUrl = process.env.FRONTEND_BASE_URL || "http://localhost:3000";
+    const resetUrl = `${frontendBaseUrl}/password/reset/${resetPasswordToken}`;
+
+    const message = `Reset Your Password by clicking on the link below: \n\n ${resetUrl}`;
+
+    // Replace this with your email sending logic
+    // You need to have a function to send emails
+    // Example: sendEmail({ email: user.email, subject: "Reset Password", message });
+    
+    res.status(200).json({
+      success: true,
+      message: `Email sent to ${user.email}`,
+    });
+  } catch (error) {
+    console.log(error);
+    res.json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const resetPasswordToken = crypto
+      .createHash("sha256")
+      .update(req.params.token)
+      .digest("hex");
+
+    const user = await Users.findOne({
+      resetPasswordToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Token is invalid or has expired",
+      });
+    }
+
+    // Note: This is not secure, use a secure way to store passwords
+    user.password = req.body.password;
+
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Password Updated",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   create,
   login,
+  forgotPassword,
+  resetPassword,
 };
