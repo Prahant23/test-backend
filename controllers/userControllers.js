@@ -33,7 +33,7 @@ const create = async (req, res) => {
       firstName: firstName,
       lastName: lastName,
       email: email,
-      password: hashedPassword,
+      password: password,
     });
 
     // Step 7: Save the user to the database
@@ -59,12 +59,12 @@ const login = async (req, res) => {
   if (!email || !password) {
     return res
       .status(400)
-      .json({ message: "Please provide email and password" });
+      .json({ success: false, message: "Please provide email and password" });
   }
 
   try {
     // Step 4: Check if the user exists
-    const user = await Users.findOne({ email: email  });
+    const user = await Users.findOne({ email: email });
     if (!user) {
       return res.json({
         success: false,
@@ -72,29 +72,39 @@ const login = async (req, res) => {
       });
     }
 
-    // Step 5: Compare the passwords
-    // const passwordMatch = await bcrypt.compare(password, user.password);
-    // if (!passwordMatch) {
-    //   return res.json({
-    //     success: false,
-    //     message: "Incorrect password",
-    //   });
-    // }
+    // Step 5: Compare the passwords (without bcrypt)
+    if (password !== user.password) {
+      return res.json({
+        success: false,
+        message: "Incorrect password",
+      });
+    }
 
     // Step 6: Generate a JWT token
-    const token = jwt.sign({ userId: user._id,isAdmin: user.isAdmin }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    const token = jwt.sign(
+      { userId: user._id, isAdmin: user.isAdmin, email: user.email },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
+    );
 
     res.json({
       success: true,
       message: "Login successful",
       token: token,
-      isAdmin: user.isAdmin,
+      user: {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        // Add more user details as needed
+      },
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Something went wrong" });
+    res.status(500).json({ success: false, message: "Something went wrong" });
   }
 };
 module.exports = {

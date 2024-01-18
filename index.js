@@ -51,7 +51,7 @@ app.get('/hello', (req, res) => {
 });
 // Defining port
 const PORT = process.env.PORT;
-//running the server on port 5000
+//running the server on port 3000
 app.listen(PORT, () => {
     console.log(`Listening on port: ${PORT}`)
 });

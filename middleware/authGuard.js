@@ -1,82 +1,77 @@
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
+const authGuard = (req, res, next) => {
+  // check if auth header is present
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.json({
+      success: false,
+      message: "Authorization header missing",
+    });
+  }
 
-const authGuard = (req,res,next) => {
-    // check if auth header is present
-    const authHeader = req.headers.authorization;
-    if(!authHeader){
-        return res.json({
-            success : false,
-            message : "Authorization header missing!"
-        })
-    }
-
-    // split auth header and get token
-    // Format : 'Bearer ghfdrgthyuhgvfghjkiujhghjuhjg'
-    const token = authHeader.split(' ')[1];
-    if(!token){
-        return res.json({
-            success : false,
-            message : "Token missing!"
-        })
-    }
-
-    // verify token
-    try {
-        const decodedData = jwt.verify(token,process.env.JWT_SECRET);
-        req.user = decodedData;
-        next();
-        
-    } catch (error) {
-        res.json({
-            success : false,
-            message : "Invalid token!"
-        })
-    }
+  // split the auth header and get the token
+  const token = authHeader.split(" ")[1];
+  // check if token is present
+  if (!token) {
+    return res.json({
+      success: false,
+      message: "Token missing",
+    });
+  }
+  // verify the token
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // attach the user data to the request object
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.json({
+      success: false,
+      message: "Invalid token",
+    });
+  }
 };
 
+const authGuardAdmin = (req, res, next) => {
+  // check if auth header is present
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.json({
+      success: false,
+      message: "Authorization header missing",
+    });
+  }
 
-const authGuardAdmin = (req,res,next) => {
-    // check if auth header is present
-    const authHeader = req.headers.authorization;
-    if(!authHeader){
-        return res.json({
-            success : false,
-            message : "Authorization header missing!"
-        })
-    }
+  // split the auth header and get the token
+  const token = authHeader.split(" ")[1];
+  // check if token is present
+  if (!token) {
+    return res.json({
+      success: false,
+      message: "Token missing",
+    });
+  }
+  // verify the token
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // attach the user data to the request object
+    req.user = decoded;
 
-    // split auth header and get token
-    // Format : 'Bearer ghfdrgthyuhgvfghjkiujhghjuhjg'
-    const token = authHeader.split(' ')[1];
-    if(!token){
-        return res.json({
-            success : false,
-            message : "Token missing!"
-        })
+    // Check if the user is an admin
+    if (req.user.isAdmin) {
+      next(); // User is an admin, proceed with the next middleware/route
+    } else {
+      res.json({
+        success: false,
+        message: "You do not have permission to perform this action",
+      });
     }
-
-    // verify token
-    try {
-        const decodedData = jwt.verify(token,process.env.JWT_SECRET);
-        req.user = decodedData;
-        if(!req.user.isAdmin){
-            return res.json({
-                success : false,
-                message : "Permission denied!"
-            })
-        }
-        next();
-        
-    } catch (error) {
-        res.json({
-            success : false,
-            message : "Invalid token!"
-        })
-    }
+  } catch (error) {
+    res.json({
+      success: false,
+      message: "Invalid token",
+    });
+  }
 };
 
-
-module.exports = {
-    authGuard,
-    authGuardAdmin
-};
+module.exports = { authGuard, authGuardAdmin };
