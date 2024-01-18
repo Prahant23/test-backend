@@ -7,10 +7,10 @@ const create = async (req, res) => {
   console.log(req.body);
 
   // Step 2: Destructure data
-  const { username, email, password } = req.body;
+  const { firstName, email, password, lastName } = req.body;
 
   // Step 3: Validate data
-  if (!username || !email || !password) {
+  if (!firstName || !email || !password || !lastName)  {
     return res.status(400).json({ message: "Please fill all required fields" });
   }
 
@@ -25,12 +25,13 @@ const create = async (req, res) => {
     }
 
     // Step 5: Hash the password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    // const saltRounds = 10;
+    // const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     // Step 6: Create a new user
     const newUser = new Users({
-      username: username,
+      firstName: firstName,
+      lastName: lastName,
       email: email,
       password: hashedPassword,
     });
@@ -63,7 +64,7 @@ const login = async (req, res) => {
 
   try {
     // Step 4: Check if the user exists
-    const user = await Users.findOne({ email: email });
+    const user = await Users.findOne({ email: email  });
     if (!user) {
       return res.json({
         success: false,
