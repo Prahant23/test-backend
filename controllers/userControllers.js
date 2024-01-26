@@ -92,85 +92,44 @@ const login = async (req, res) => {
   }
 };
 
-const forgotPassword = async (req, res) => {
-  console.log(req.body);
-  try {
-    const user = await Users.findOne({ email: req.body.email });
+// const forgotpassword = async (req, res) => {
 
-    if (!user) {
-      return res.json({
-        success: false,
-        message: "Email not found.",
-      });
-    }
-    const resetPasswordToken = user.getResetPasswordToken();
+//   // Destructuring
+//   const { email } = req.body;
 
-    await user.save();
+//   // Validation
+//   if (!email) {
+//     return res.status(400).json({ msg: "Please enter all fields" });
+//   }
 
-    const frontendBaseUrl = process.env.FRONTEND_BASE_URL || "http://localhost:3000";
-    const resetUrl = `${frontendBaseUrl}/password/reset/${resetPasswordToken}`;
+//   try {
+//     // Check existing user
+//     const user = await Users.findOne({ email });
+//     if (!user) {
+//       return res.status(400).json({ msg: "User does not exist" });
+//     }
 
-    const message = `Reset Your Password by clicking on the link below: \n\n ${resetUrl}`;
+//     // Create a token
+//     const secret = process.env.JWT_SECRET + user.password;
+//     const token = jwt.sign({ email: user.email, id: user._id }, secret, { expiresIn: "15m" });
 
-    // Replace this with your email sending logic
-    // You need to have a function to send emails
-    // Example: sendEmail({ email: user.email, subject: "Reset Password", message });
     
-    res.status(200).json({
-      success: true,
-      message: `Email sent to ${user.email}`,
-    });
-  } catch (error) {
-    console.log(error);
-    res.json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
 
-const resetPassword = async (req, res) => {
-  try {
-    const resetPasswordToken = crypto
-      .createHash("sha256")
-      .update(req.params.token)
-      .digest("hex");
+//     // Send the link to the user's email (You need to implement this part)
+//     const link = `http://localhost:5000/api/user/forgetpassword/${user._id}/${token}`;
+//     console.log(link);
 
-    const user = await Users.findOne({
-      resetPasswordToken,
-      resetPasswordExpire: { $gt: Date.now() },
-    });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(400).json({ message: "Something went wrong" });
+//   }
+// };
 
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "Token is invalid or has expired",
-      });
-    }
 
-    // Note: This is not secure, use a secure way to store passwords
-    user.password = req.body.password;
 
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
-    await user.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Password Updated",
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
 
 module.exports = {
   create,
   login,
-  forgotPassword,
-  resetPassword,
+  
 };
