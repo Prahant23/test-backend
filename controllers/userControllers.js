@@ -1,6 +1,18 @@
 const Users = require("../model/userModel.js");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const nodemailer = require("nodemailer");
+
+
+const createTransporter = () => {
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: "prashantbist64@gmail.com", // replace with your Gmail email
+      pass: "pjtj kaws xqmb wdkz", // replace with your Gmail password
+    },
+  });
+};
 
 const create = async (req, res) => {
   console.log(req.body);
@@ -92,38 +104,56 @@ const login = async (req, res) => {
   }
 };
 
-// const forgotpassword = async (req, res) => {
+const forgotpassword = async (req, res) => {
+  // Destructuring
+  const { email } = req.body;
 
-//   // Destructuring
-//   const { email } = req.body;
+  // Validation
+  if (!email) {
+    return res.status(400).json({ msg: "Please enter all fields" });
+  }
 
-//   // Validation
-//   if (!email) {
-//     return res.status(400).json({ msg: "Please enter all fields" });
-//   }
+  try {
+    // Check existing user
+    const user = await Users.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ msg: "User does not exist" });
+    }
 
-//   try {
-//     // Check existing user
-//     const user = await Users.findOne({ email });
-//     if (!user) {
-//       return res.status(400).json({ msg: "User does not exist" });
-//     }
+    // Create a token
+    const secret = process.env.JWT_SECRET + user.password;
+    const token = jwt.sign({ email: user.email, id: user._id }, secret, { expiresIn: "15m" });
 
-//     // Create a token
-//     const secret = process.env.JWT_SECRET + user.password;
-//     const token = jwt.sign({ email: user.email, id: user._id }, secret, { expiresIn: "15m" });
+    // Send the link to the user's email
+    const link = `http://localhost:4000/api/user/forgotpassword/${user._id}/${token}`;
 
+    // Create a nodemailer transporter
+    const transporter = createTransporter();
+
+    // Define the email options
+    const mailOptions = {
+      from: "prashantbist64@gmail.com",
+      to: user.email,
+      subject: "Password Reset",
+      text: `Click on the following link to reset your password: ${link}`,
+    };
+
+    // Send the email
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Error sending email" });
+      }
+      console.log("Email sent: " + info.response);
+      res.status(500).json({ message: "Password reset link sent to your email" });
+    });
     
 
-//     // Send the link to the user's email (You need to implement this part)
-//     const link = `http://localhost:5000/api/user/forgetpassword/${user._id}/${token}`;
-//     console.log(link);
-
-//   } catch (error) {
-//     console.error(error);
-//     res.status(400).json({ message: "Something went wrong" });
-//   }
-// };
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({ message: "Something went wrong" });
+  }
+};
 
 
 
@@ -131,5 +161,6 @@ const login = async (req, res) => {
 module.exports = {
   create,
   login,
+  forgotpassword,
   
 };
