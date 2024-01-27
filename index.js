@@ -5,6 +5,7 @@ const connectToDB = require('./database/db');
 const cors = require('cors');
 const cloudinary = require('cloudinary');
 const acceptMultimedia = require('connect-multiparty');
+const cartroute = require('./routes/cartRoutes');
 
 // creating an express app
 const app = express();
@@ -32,21 +33,19 @@ app.use(cors(corsOptions));
 // connecting to database
 connectToDB();
 // accepting json data
-app.use(express.json());
 //defining routes
 app.use('/api/user',require('./routes/userRoutes'));
 app.use('/api/product',require('./routes/productRoutes'));
 
-// creating test route
-app.get("/test",(req,res)=>{
-    res.status(200).json({message:"Hello World test api is working"});
-})
+
+// //cart route
+app.use('/api/addtocart',cartroute);
 
 //task to create hello route
-app.get('/hello', (req, res) => {
+app.get('/api', (req, res) => {
     //res.send('Hello World2!');
     res.status(200).send({
-        message: 'Hello World!'
+        message: 'cartadded'
     });
 });
 // Defining port
