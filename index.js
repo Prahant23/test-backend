@@ -26,7 +26,7 @@ const corsOptions={
     credentials:true,
     optionSuccessStatus:200
 }
-app.use(cors(corsOptions));
+app.use(cors);
  
 // connecting to database
 connectToDB();
