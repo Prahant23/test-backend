@@ -2,17 +2,8 @@ const Users = require("../model/userModel.js");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
+const { sendEmail } = require("../middleware/sendEmails.js");
 
-
-const createTransporter = () => {
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: "prashantbist64@gmail.com", // replace with your Gmail email
-      pass: "pjtj kaws xqmb wdkz", // replace with your Gmail password
-    },
-  });
-};
 
 const create = async (req, res) => {
   console.log(req.body);
@@ -104,63 +95,103 @@ const login = async (req, res) => {
   }
 };
 
-const forgotpassword = async (req, res) => {
-  // Destructuring
-  const { email } = req.body;
-
-  // Validation
-  if (!email) {
-    return res.status(400).json({ msg: "Please enter all fields" });
-  }
-
+const forgotPassword = async (req, res) => {
+  console.log(req.body);
   try {
-    // Check existing user
-    const user = await Users.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ msg: "User does not exist" });
-    }
-
-    // Create a token
-    const secret = process.env.JWT_SECRET + user.password;
-    const token = jwt.sign({ email: user.email, id: user._id }, secret, { expiresIn: "15m" });
-
-    // Send the link to the user's email
-    const link = `http://localhost:4000/api/user/forgotpassword/${user._id}/${token}`;
-
-    // Create a nodemailer transporter
-    const transporter = createTransporter();
-
-    // Define the email options
-    const mailOptions = {
-      from: "prashantbist64@gmail.com",
-      to: user.email,
-      subject: "Password Reset",
-      text: `Click on the following link to reset your password: ${link}`,
-    };
-
-    // Send the email
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error(error);
-        return res.status(200).json({ message: "Error sending email" });
-      }
-      console.log("Email sent: " + info.response);
-      res.status(500).json({ message: "Password reset link sent to your email" });
-    });
+    const user = await Users.findOne({ email: req.body.email });
     
+    if (!user) {
+      return res.json({
+        success: false,
+        message: "Email not found.",
+      });
+    }
+    const resetPasswordToken = user.getResetPasswordToken();
 
+    await user.save();
+
+    // Assuming you have a configuration variable for the frontend URL
+    const frontendBaseUrl = process.env.FRONTEND_BASE_URL || "http://localhost:3000";
+    const resetUrl = `${frontendBaseUrl}/password/reset/${resetPasswordToken}`;
+
+    const message = `Reset Your Password by clicking on the link below: \n\n ${resetUrl}`;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: "Reset Password",
+        message,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: `Email sent to ${user.email}`,
+      });
+    } catch (error) {
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save();
+
+      res.json({
+        success: false,
+        message: error.message,
+      });
+    }
   } catch (error) {
-    console.error(error);
-    res.status(400).json({ message: "Something went wrong" });
+    console.log(error);
+    res.json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
 
+const resetPassword = async (req, res) => {
+  try {
+    const resetPasswordToken = crypto
+      .createHash("sha256")
+      .update(req.params.token)
+      .digest("hex");
 
+    const user = await Users.findOne({
+      resetPasswordToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Token is invalid or has expired",
+      });
+    }
+
+    // Set the new password directly without using bcrypt
+    user.password = req.body.password;
+
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    // Notify the user that the password has been updated
+    res.status(200).json({
+      success: true,
+      message: "Password Updated",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
 module.exports = {
   create,
   login,
-  forgotpassword,
+  forgotPassword,
+  resetPassword,
   
+
 };

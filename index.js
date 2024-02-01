@@ -26,7 +26,9 @@ const corsOptions={
     credentials:true,
     optionSuccessStatus:200
 }
-app.use(cors);
+app.use(cors(corsOptions));
+app.set('view engine', 'ejs');
+app.use(express.urlencoded({extended : true}));
  
 // connecting to database
 connectToDB();
@@ -38,9 +40,8 @@ app.use(express.json());
  
 app.use('/api/user',require('./routes/userRoutes'));
 app.use('/api/product',require('./routes/productRoutes'));
-app.use('/api/user/forgotpassword', require('./routes/userRoutes'));
+// app.use('/api/user/resetpassword/${user._id}/${token}', require('./routes/userRoutes'));
 
- 
  
  
 // Defining port
