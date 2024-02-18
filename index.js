@@ -43,7 +43,6 @@ app.use('/api/product',require('./routes/productRoutes'));
 // app.use('/api/user/resetpassword/${user._id}/${token}', require('./routes/userRoutes'));
 
  
- 
 // Defining port
 const PORT = process.env.PORT;
 //running the server on port 5000

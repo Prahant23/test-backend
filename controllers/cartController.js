@@ -1,24 +1,45 @@
-// const cart = require("../model/cartmodel");
+const cart = require("../model/cartmodel");
 
-// const addtocart = async (req, res) => {
-//   try {
-//     const cart_obj = new cart({
-//       // Use another field name, assuming product_id is the identifier
-//       product_id: req.body.product_id,
-//       price: req.body.price,
-//     });
-//     const cart_data = await cart_obj.save();
+const addtocart = async (req, res) => {
 
-//     res.status(200).send({
-//       success: true,
-//       msg: "cart product detail",
-//       data: cart_data,
-//     });
-//   } catch (error) {
-//     res.status(400).send({ success: false, msg: error.message });
-//   }
-// };
+  const { productName, productPrice, productCategory, 
+    productDescription } = req.body;
+    const { productImage } = req.files;
+    if (!productName || !productPrice ||
+    !productCategory || !productDescription) {
+    return res.status(422).json({ error: "Please add all the fields" });
+    }
+  try {
+    if(productImage){
+      const uploadImage =await cloudinary.v2.uploader.upload(
+        productImage.path,
+        {
+          folder :  "Vintuff",
+          crop  : "scale"
+        }
+      )
 
-// module.exports = {
-//   addtocart,
-// };
+      //update product 
+      const product = await productModel.findById(req.params.id);
+      product.name = productName;
+      product.price = productprice;
+      product.category = productCategory;
+      product.description = productDescription;
+      product.image = uploadImage.secure_url;
+
+      await product.save();
+      res.status(201).json({message: "Product updated successfully"});
+    }else{
+      const product =  await productModel.findById(req.params.id);
+      product.name = productName;
+    }
+  
+  }  catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Internal Server  Error" });  
+};
+}
+
+module.exports = {
+  addtocart,
+};

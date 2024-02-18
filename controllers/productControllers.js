@@ -1,132 +1,136 @@
-// controllers/productController.js
-const Product = require("../model/productModel.js");
-const Category = require("../model/productCategory.js");
+const Products = require("../model/productModel");
+const User = require("../model/userModel");
+const cloudinary = require("cloudinary");
 
-// Create a new product
+// create product
 const createProduct = async (req, res) => {
-  try {
-    const { name, description, price, productImage, category } = req.body;
+  // step 1 : check incomming data
+  console.log(req.body);
+  console.log(req.files);
 
-    // Check if the category exists
-    const existingCategory = await Category.findById(category);
-    if (!existingCategory) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid category ID",
-      });
-    }
+  // step 2 : destructure the data
+  const { productName, productPrice, productCategory, productDescription } =
+    req.body;
+  const { productImage } = req.files;
 
-    const newProduct = new Product({
-      name,
-      description,
-      price,
-      productImage,
-      category,
+  // step 3 : Validate data
+  if (
+    !productName ||
+    !productPrice ||
+    !productCategory ||
+    !productDescription ||
+    !productImage
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Please enter all fields",
     });
-
+  }
+  try {
+    // upload image to  cloudinary
+    const uploadedImage = await cloudinary.v2.uploader.upload(
+      productImage.path,
+      { folder: "products", crop: "scale" }
+    );
+    // save to databasee
+    const newProduct = new Products({
+      productName: productName,
+      productPrice: productPrice,
+      productCategory: productCategory,
+      productDescription: productDescription,
+      productImage: uploadedImage.secure_url,
+    });
     await newProduct.save();
-
-    res.json({
+    res.status(200).json({
       success: true,
       message: "Product created successfully",
       product: newProduct,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Something went wrong" });
+    console.log(error)
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
   }
 };
-
-// Get all products
-const getAllProducts = async (req, res) => {
+const getProducts = async (req, res) => {
   try {
-    const products = await Product.find().populate("category");
-
-    res.json({
+    const allProducts = await Products.find({});
+    res.status(200).json({
       success: true,
-      products,
+      message: "All Products",
+      products: allProducts,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Something went wrong" });
+    res.json({
+      message: "internal server error",
+    });
+  }
+};
+// fetch single product
+const getSingleProduct = async (req, res) => {
+  const productId = req.params.id;
+  try {
+    const singleProduct = await Products.findById(productId);
+    res.status(200).json({
+      success: true,
+      message: "Single Product",
+      product: singleProduct,
+    });
+  } catch (error) {
+    console.log(error);
+    res.send("Internal server error");
   }
 };
 
-
-// Update a product by ID
-const updateProductById = async (req, res) => {
+const deleteProduct = async (req, res) => {
   try {
-    const productId = req.params.id;
-    const { name, description, price, productImage, category } = req.body;
+    const productId = req.params.productId;
 
-    // Check if the category exists
-    const existingCategory = await Category.findById(category);
-    if (!existingCategory) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid category ID",
-      });
-    }
-
-    const updatedProduct = await Product.findByIdAndUpdate(
-      productId,
-      {
-        name,
-        description,
-        price,
-        productImage,
-        category,
-      },
-      { new: true }
-    ).populate("category");
-
-    if (!updatedProduct) {
+    // Check if the product exists
+    const product = await Products.findById(productId);
+    if (!product) {
       return res.status(404).json({
         success: false,
-        message: "Product not found",
+        message: 'Product not found.',
       });
     }
+
+    // Check if the user making the request is the owner of the product
+    const userId = req.user.id; // Assuming you have the user's ID from the authentication token
+    if (userId.toString() !== product.owner.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to delete this product.',
+      });
+    }
+
+    // Delete the product from Cloudinary
+    const publicId = product.productImage.split('/').pop().split('.')[0];
+    await cloudinary.v2.uploader.destroy(`products/${publicId}`);
+
+    // Delete the product from the database
+    await Product.findByIdAndDelete(productId);
+
+    // Remove the product ID from the user's products array
+    const user = await User.findById(userId);
+    user.product = user.product.filter((id) => id.toString() !== productId.toString());
+    await user.save();
 
     res.json({
       success: true,
-      message: "Product updated successfully",
-      product: updatedProduct,
+      message: 'Product deleted successfully.',
+      deletedProduct: product,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Something went wrong" });
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+    });
   }
 };
 
-// Delete a product by ID
-const deleteProductById = async (req, res) => {
-    try {
-      const productId = req.params.id;
-  
-      const deletedProduct = await Product.findByIdAndDelete(productId);
-  
-      if (!deletedProduct) {
-        return res.status(404).json({
-          success: false,
-          message: "Product not found",
-        });
-      }
-  
-      res.json({
-        success: true,
-        message: "Product deleted successfully",
-        product: deletedProduct,
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Something went wrong" });
-    }
-  };
-  
+module.exports = { createProduct, getProducts, getSingleProduct, deleteProduct };
 
-module.exports = {
-  createProduct,
-  getAllProducts,
-  updateProductById,
-  deleteProductById,
-};
