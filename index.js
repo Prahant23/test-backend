@@ -40,10 +40,12 @@ app.use(express.json());
  
 app.use('/api/user',require('./routes/userRoutes'));
 app.use('/api/product',require('./routes/productRoutes'));
+app.use("/api/addtocart", require('./routes/cartRoutes'));
+app.use("/api/updateUser/:id?", require('./routes/userRoutes'));
 // app.use('/api/user/resetpassword/${user._id}/${token}', require('./routes/userRoutes'));
 
  
-// Defining port
+// Defining por
 const PORT = process.env.PORT;
 //running the server on port 5000
 app.listen(PORT, () => {

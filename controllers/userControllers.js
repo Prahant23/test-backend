@@ -3,6 +3,8 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const { sendEmail } = require("../middleware/sendEmails.js");
+const cloudinary = require("cloudinary");
+const User = require("../model/userModel.js");
 
 
 const create = async (req, res) => {
@@ -186,6 +188,77 @@ const resetPassword = async (req, res) => {
     });
   }
 };
+const getUsers = async (req, res) => {
+  try{
+    const userId = req.params.id || req.user.id;
+    const user = await Users.findById(userId);
+    if(!user){
+      return res.status(404).json({
+        success: false,
+        message: 'User not found.',
+      });
+    }res.json({
+      success: true,
+      message: 'Users fetched successfully.',
+      user
+    })
+  }
+  catch(error){
+    console.log('error: ', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+    });
+  }  
+}
+const updateUserProfile = async (req, res) => {
+  try {
+    const userId = req.params.id || req.user.id;
+    const user = await Users.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found.',
+      });
+    }
+
+    let avatarUrl = null;
+    if (typeof req.body.avatar !== 'string') {
+      const { avatar } = req.files;
+      const uploadedAvatar = await cloudinary.uploader.upload(avatar.path, { folder: 'avatars' });
+      if (!uploadedAvatar || !uploadedAvatar.secure_url) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to upload avatar to Cloudinary',
+        });
+      }
+      avatarUrl = uploadedAvatar.secure_url;
+    } else {
+      avatarUrl = req.body.avatar;
+    }
+    const updateData = {
+      ...req.body,
+      avatar:avatarUrl
+    }
+    console.log('updateData: ', updateData);
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updateData, {new:true})
+    console.log('updatedUser: ', updatedUser);
+    res.status(200).json({
+      success: true,
+      message: 'User profile updated successfully.',
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+    });
+  }
+};
+
+
 
 
 module.exports = {
@@ -193,6 +266,8 @@ module.exports = {
   login,
   forgotPassword,
   resetPassword,
+  updateUserProfile,
+  getUsers
   
 
 };

@@ -1,14 +1,13 @@
 const express = require("express");
-const cartroute = express();
-const bodyparser = require("body-parser");
-cartroute.use(bodyparser.json());
-cartroute.use(bodyparser.urlencoded({extended:true}));
+const cartRoute = express.Router();///Use Router for route creation
+const bodyParser = require("body-parser");
+cartRoute.use(bodyParser.json());
+cartRoute.use(bodyParser.urlencoded({ extended: true }));
 
+const {authGuard }= require("../middleware/authGuard"); // Destructuring to get authGuard
+const {addtocart} = require("../controllers/cartController")
 
-const auth =  require("../middleware/authGuard");
+// Existing route for adding to cart
+cartRoute.post("/addtocart", authGuard,addtocart);
 
-const cartcontroller = require("../controllers/cartController");
-
-// cartroute.post("/addtocart",auth, cartcontroller.addtocart);
-
-module.exports = cartroute;
+module.exports = cartRoute;
