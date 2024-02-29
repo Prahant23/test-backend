@@ -10,14 +10,14 @@ const addtocart = async (req, res) => {
   }
 
   try {
-    // Optionally, verify the product exists
+    // Verify the product exists
     const product = await productModel.findById(productId);
     if (!product) {
       return res.status(404).json({ error: "Product not found" });
     }
 
     // Check if the cart exists for the user
-    let userCart = await cartModel.findOne({ userId: req.user._id }); // Assuming you have user info in req.user
+    let userCart = await cartModel.findOne({ userId: req.user._id });
     if (!userCart) {
       // If no cart exists, create a new cart
       userCart = new cartModel({
@@ -32,13 +32,16 @@ const addtocart = async (req, res) => {
         userCart.products[productIndex].quantity += quantity;
       } else {
         // Product does not exist in cart, add new
-        userCart.products.post({ productId, quantity });
+        userCart.products.push({ productId, quantity });
       }
     }
 
     await userCart.save();
     res.status(201).json({ message: "Product added to cart successfully" });
   } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(422).json({ error: "Invalid product ID format" });
+    }
     console.log(error);
     res.status(500).json({ error: "Internal Server Error" });
   }

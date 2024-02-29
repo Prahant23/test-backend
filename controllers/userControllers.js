@@ -74,9 +74,6 @@ const login = async (req, res) => {
     const token = jwt.sign(
       { userId: user._id, isAdmin: user.isAdmin, email: user.email },
       process.env.JWT_SECRET,
-      {
-        expiresIn: "1h",
-      }
     );
 
     res.json({
@@ -214,6 +211,7 @@ const getUsers = async (req, res) => {
 const updateUserProfile = async (req, res) => {
   try {
     const userId = req.params.id || req.user.id;
+    console.log(userId, 'this is user id')
     const user = await Users.findById(userId);
     if (!user) {
       return res.status(404).json({
@@ -225,6 +223,7 @@ const updateUserProfile = async (req, res) => {
     let avatarUrl = null;
     if (typeof req.body.avatar !== 'string') {
       const { avatar } = req.files;
+      console.log(avatar)
       const uploadedAvatar = await cloudinary.uploader.upload(avatar.path, { folder: 'avatars' });
       if (!uploadedAvatar || !uploadedAvatar.secure_url) {
         return res.status(500).json({

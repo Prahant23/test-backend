@@ -3,7 +3,7 @@ const authGuard = (req, res, next) => {
   // check if auth header is present
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    return res.json({
+    return res.status(401).json({
       success: false,
       message: "Authorization header missing",
     });
@@ -13,7 +13,7 @@ const authGuard = (req, res, next) => {
   const token = authHeader.split(" ")[1];
   // check if token is present
   if (!token) {
-    return res.json({
+    return res.status(401).json({
       success: false,
       message: "Token missing",
     });
@@ -25,7 +25,8 @@ const authGuard = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (error) {
-    res.json({
+    console.log(error)
+    res.status(401).json({
       success: false,
       message: "Invalid token",
     });
@@ -36,7 +37,7 @@ const authGuardAdmin = (req, res, next) => {
   // check if auth header is present
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    return res.json({
+    return res.status(401).json({
       success: false,
       message: "Authorization header missing",
     });
@@ -46,7 +47,7 @@ const authGuardAdmin = (req, res, next) => {
   const token = authHeader.split(" ")[1];
   // check if token is present
   if (!token) {
-    return res.json({
+    return res.status(401).json({
       success: false,
       message: "Token missing",
     });
@@ -61,13 +62,14 @@ const authGuardAdmin = (req, res, next) => {
     if (req.user.isAdmin) {
       next(); // User is an admin, proceed with the next middleware/route
     } else {
-      res.json({
+      res.status(401).json({
         success: false,
         message: "You do not have permission to perform this action",
       });
     }
   } catch (error) {
-    res.json({
+    console.log(error)
+    res.status(401).json({
       success: false,
       message: "Invalid token",
     });
