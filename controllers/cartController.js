@@ -1,52 +1,99 @@
-const cartModel = require("../model/cartmodel");
-const cloudinary = require('cloudinary');
-const productModel = require("../model/productModel"); // Ensure you have this if you're fetching product details
+// const cart = require("../model/cartmodel");
 
+// const addtocart = async (req, res) => {
+
+//   const { productName, productPrice, productCategory, 
+//     productDescription } = req.body;
+//     const { productImage } = req.files;
+//     if (!productName || !productPrice ||
+//     !productCategory || !productDescription) {
+//     return res.status(422).json({ error: "Please add all the fields" });
+//     }
+//   try {
+//     if(productImage){
+//       const uploadImage =await cloudinary.v2.uploader.upload(
+//         productImage.path,
+//         {
+//           folder :  "Vintuff",
+//           crop  : "scale"
+//         }
+//       )
+
+//       //update product 
+//       const product = await productModel.findById(req.params.id);
+//       product.name = productName;
+//       product.price = productprice;
+//       product.category = productCategory;
+//       product.description = productDescription;
+//       product.image = uploadImage.secure_url;
+
+//       await product.save();
+//       res.status(201).json({message: "Product updated successfully"});
+//     }else{
+//       const product =  await productModel.findById(req.params.id);
+//       product.name = productName;
+//     }
+  
+//   }  catch (error) {
+//     console.log(error);
+//     res.status(500).json({ error: "Internal Server  Error" });  
+// };
+// }
+
+// module.exports = {
+//   addtocart,
+// };
+
+// new
+const mongoose = require('mongoose');
+const CartItem = require('../model/cartmodel');
+const Products = require("../model/productModel");
+
+// Controller to add item to cart
 const addtocart = async (req, res) => {
-  const { productId, quantity } = req.body; // Assuming you pass productId and quantity
-
-  if (!productId || !quantity) {
-    return res.status(422).json({ error: "Please provide product ID and quantity" });
-  }
-
   try {
-    // Verify the product exists
-    const product = await productModel.findById(productId);
-    if (!product) {
-      return res.status(404).json({ error: "Product not found" });
+    const { productId, quantity } = req.body;
+    const userId = req.user.userId; // Extract userId from authenticated user
+    console.log(userId);
+
+    // Validate productId as a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ error: 'Invalid productId' });
     }
 
-    // Check if the cart exists for the user
-    let userCart = await cartModel.findOne({ userId: req.user._id });
-    if (!userCart) {
-      // If no cart exists, create a new cart
-      userCart = new cartModel({
-        userId: req.user._id,
-        products: [{ productId, quantity }],
-      });
-    } else {
-      // If cart exists, add or update the product in the cart
-      const productIndex = userCart.products.findIndex(item => item.productId.toString() === productId);
-      if (productIndex > -1) {
-        // Product exists in cart, update quantity
-        userCart.products[productIndex].quantity += quantity;
-      } else {
-        // Product does not exist in cart, add new
-        userCart.products.push({ productId, quantity });
-      }
-    }
+    // Create a new CartItem instance with userId
+    const cartItem = new CartItem({ productId: new mongoose.Types.ObjectId(productId), quantity, userId });
 
-    await userCart.save();
-    res.status(201).json({ message: "Product added to cart successfully" });
+    await cartItem.save();
+
+    res.status(201).json({ message: 'Item added to cart successfully' });
   } catch (error) {
-    if (error.name === 'CastError') {
-      return res.status(422).json({ error: "Invalid product ID format" });
-    }
-    console.log(error);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
+const getCartItems = async (req, res) => {
+  try {
+    const cartItems = await CartItem.find({userId: req.user.userId});
+    let cart = [];
+    for(let i=0; i<cartItems.length; i++) {
+      let cartItem = cartItems[i];
+      let product = await Products.findById(cartItem.productId);
+      let item = {
+        productImg: product.productImage,
+        productName: product.productName,
+        productPrice: product.productPrice
+      };
+      cart.push(item)
+    }
+    return res.json({message: 'success', cart})
+  } catch (error) {
+    
+  }
+}
+
 module.exports = {
-  addtocart
+  addtocart,
+  getCartItems
 };

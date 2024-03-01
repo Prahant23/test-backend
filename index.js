@@ -40,8 +40,8 @@ app.use(express.json());
  
 app.use('/api/user',require('./routes/userRoutes'));
 app.use('/api/product',require('./routes/productRoutes'));
-app.use("/api/addtocart", require('./routes/cartRoutes'));
-app.use("/api/updateUser/:id?", require('./routes/userRoutes'));
+app.use('/api/cart',require('./routes/cartRoutes'));
+app.use('/api/order',require('./routes/orderRoutes'));
 // app.use('/api/user/resetpassword/${user._id}/${token}', require('./routes/userRoutes'));
 
  
