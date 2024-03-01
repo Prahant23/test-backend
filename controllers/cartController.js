@@ -81,6 +81,7 @@ const getCartItems = async (req, res) => {
       let cartItem = cartItems[i];
       let product = await Products.findById(cartItem.productId);
       let item = {
+        _id: cartItem._id,
         productImg: product.productImage,
         productName: product.productName,
         productPrice: product.productPrice
@@ -92,8 +93,22 @@ const getCartItems = async (req, res) => {
     
   }
 }
+const deleteCartItem = async (req, res) => {
+  try {
+    const cartItemId = req.params.id;
+    const deletedCartItem = await CartItem.findByIdAndDelete(cartItemId);
+    if (!deletedCartItem) {
+      return res.status(404).json({ message: "Cart item not found" });
+    }
+    res.status(200).json({ message: "Cart item deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting cart item:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 module.exports = {
   addtocart,
-  getCartItems
+  getCartItems,
+  deleteCartItem
 };
