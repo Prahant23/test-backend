@@ -46,7 +46,7 @@ app.use('/api/order',require('./routes/orderRoutes'));
 // app.use('/api/user/resetpassword/${user._id}/${token}', require('./routes/userRoutes'));
 
  
-// Defining por
+// Defining po  r
 const PORT = process.env.PORT;
 //running the server on port 5000
 app.listen(PORT, () => {
