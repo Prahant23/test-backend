@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema({
 userSchema.methods.getResetPasswordToken = function () {
   const resetToken = crypto.randomBytes(20).toString("hex");
 
-  this.resetPasswordToken = crypto
+  this.resetPasswordToken = crypto //reset password token
     .createHash("sha256")
     .update(resetToken)
     .digest("hex");
