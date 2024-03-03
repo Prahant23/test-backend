@@ -23,9 +23,7 @@
 //       const product = await productModel.findById(req.params.id);
 //       product.name = productName;
 //       product.price = productprice;
-//       product.category = productCategory;
-//       product.description = productDescription;
-//       product.image = uploadImage.secure_url;
+
 
 //       await product.save();
 //       res.status(201).json({message: "Product updated successfully"});
