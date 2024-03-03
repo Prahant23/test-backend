@@ -8,14 +8,9 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   isAdmin: { type: Boolean, default: false },
   avatar: {type: String},
-  // product:[
-  //   {
-  //     type:moongose.Schema.Types.ObjectId,
-  //     ref:'Product'
-  //   }
-  // ],
-  resetPasswordToken: String,
-  resetPasswordExpire: Date,
+ 
+  resetPasswordToken: String, //rest password token
+  resetPasswordExpire: Date,  
  
 });
 
