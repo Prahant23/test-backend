@@ -90,6 +90,23 @@ it('/DELETE/api/cart/delete/:id | Response should be json', async () =>{
       }
     });
 
+    
+    // it("POST /api/product/createProduct | Response with success message", async () => {
+    //   const response = await request(app).post("/api/product/createProduct").send({
+    //     productName: "fff",
+    //     productPrice: "2424",
+    //     productCategory: "shoes",
+    //     productDescription: "dgbvfsdg", 
+    //   });
+    //   if (response.body.success) {
+    //     expect(response.statusCode).toBe(200);
+    //     expect(response.body.message).toEqual("Product created successfully");
+    //   } else {
+    //     expect(response.body.success).toBe(false);
+      
+    //   }
+    // });
+
 
 
 
