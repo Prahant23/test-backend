@@ -9,7 +9,7 @@ const checkoutOrder = async (req, res) => {
     const order = new Order({ userId, products, totalAmount });
     await order.save();
 
-    res.status(201).json({ message: 'Order placed successfully', order });
+    res.status(201).json({ message: 'Order placed successfully', order }); //succes message
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });
