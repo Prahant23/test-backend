@@ -8,5 +8,5 @@ const { authGuardAdmin, authGuard } = require('../middleware/authGuard.js');
 router.post('/createProduct',authGuardAdmin,productControllers.createProduct);
 router.get('/getProduct',productControllers.getProducts);
 router.get('/getProductByUserId/:userId',authGuard,productControllers.getSingleProduct);
-router.delete('/deleteProduct/:productId', authGuard, productControllers.deleteProduct);
+router.delete('/deleteProduct/:productId', authGuard, productControllers.deleteProduct);//deleteroute for products
 module.exports = router;
