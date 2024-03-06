@@ -23,7 +23,7 @@ const createProduct = async (req, res) => {
   ) {
     return res.status(400).json({
       success: false,
-      message: "Please enter all fields",
+      message: "Please enter all fields", //message for ffff
     });
   }
   try {
@@ -70,9 +70,33 @@ const getProducts = async (req, res) => {
 };
 // fetch single product
 const getSingleProduct = async (req, res) => {
-  const productId = req.params.id;
+  const productId = req.params.productId;
   try {
     const singleProduct = await Products.findById(productId);
+    res.status(200).json({
+      success: true,
+      message: "Single Product",
+      product: singleProduct,
+    });
+  } catch (error) {
+    console.log(error);
+    res.send("Internal server error");
+  }
+};
+const editProduct = async (req, res) => {
+  const productId = req.params.productId;
+  const data = req.body;
+  data.productImage = undefined;
+  // if(data.productImage) {
+  //   const uploadedImage = await cloudinary.v2.uploader.upload(
+  //     data.productImage.path,
+  //     { folder: "products", crop: "scale" }
+  //   );
+  //   data.productImage = uploadedImage;
+  // }
+
+  try {
+    const singleProduct = await Products.findOneAndUpdate({_id: productId}, req.body);
     res.status(200).json({
       success: true,
       message: "Single Product",
@@ -97,26 +121,12 @@ const deleteProduct = async (req, res) => {
       });
     }
 
-    // Check if the user making the request is the owner of the product
-    const userId = req.user.id; // Assuming you have the user's ID from the authentication token
-    if (userId.toString() !== product.owner.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not have permission to delete this product.',
-      });
-    }
-
     // Delete the product from Cloudinary
     const publicId = product.productImage.split('/').pop().split('.')[0];
     await cloudinary.v2.uploader.destroy(`products/${publicId}`);
 
     // Delete the product from the database
-    await Product.findByIdAndDelete(productId);
-
-    // Remove the product ID from the user's products array
-    const user = await User.findById(userId);
-    user.product = user.product.filter((id) => id.toString() !== productId.toString());
-    await user.save();
+    await Products.findByIdAndDelete(productId);
 
     res.json({
       success: true,
@@ -132,5 +142,5 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-module.exports = { createProduct, getProducts, getSingleProduct, deleteProduct };
+module.exports = { createProduct, getProducts, getSingleProduct, deleteProduct, editProduct };
 

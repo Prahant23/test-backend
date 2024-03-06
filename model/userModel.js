@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema({
   isAdmin: { type: Boolean, default: false },
   avatar: {type: String},
  
-  resetPasswordToken: String, //rest password token
+  resetPasswordToken: String, //rest password tokenff
   resetPasswordExpire: Date,  
  
 });
